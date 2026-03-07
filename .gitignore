@@ -42,6 +42,7 @@ node_modules/
 
 # env
 .env
+.env.test
 .env.production
 .dev.vars
 
@@ -74,3 +75,5 @@ frontend/coverage
 *.tsbuildinfo
 .env.local
 .env.*.local
+.claude
+.gitignore
