@@ -1,7 +1,7 @@
 import type { Task, CreateTaskBody, Tenant } from '@/types/task'
 import { TENANT_TOKENS } from '@/types/task'
 
-const API_BASE = 'http://localhost:8787'
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
 function getHeaders(tenant: Tenant): HeadersInit {
   return {
