@@ -12,7 +12,7 @@ This project is a Full-stack multi-tenant task management. Each tenant has isola
 
 ## Deployed App (Running on Cloudflare)
 
-- **Frontend:** https://50561cf8.task-app-frontend.pages.dev/
+- **Frontend:** https://e491d515.task-app-frontend.pages.dev/
 - **API:** https://task-app.task-app-challenge-yerodin.workers.dev/
 - **Swagger / OpenAPI docs:** https://task-app.task-app-challenge-yerodin.workers.dev/ui
 
