@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config'
 import { config } from 'dotenv'
 
-// Load DATABASE_TEST_URL before workers start so globalSetup and testDb can read it
-config({ path: '.env.test', override: true })
+// Load DATABASE_TEST_URL before workers start — no override so CI env vars take precedence
+config({ path: '.env.test' })
 
 export default defineConfig({
 	test: {
