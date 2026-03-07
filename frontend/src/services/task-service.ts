@@ -1,5 +1,6 @@
-import type { Task, CreateTaskBody, Tenant } from '@/types/task'
-import { TENANT_TOKENS } from '@/types/task'
+import type { Task, CreateTaskBody } from '@/types/task'
+import type { Tenant } from '@/types/tenant'
+import { TENANT_TOKENS } from '@/types/tenant'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
@@ -11,8 +12,6 @@ function getHeaders(tenant: Tenant): HeadersInit {
 }
 
 export async function getTasks(tenant: Tenant): Promise<Task[]> {
-  console.log('getTasks', tenant)
-  console.log('getHeaders', getHeaders(tenant))
   const res = await fetch(`${API_BASE}/tasks`, {
     headers: getHeaders(tenant),
   })

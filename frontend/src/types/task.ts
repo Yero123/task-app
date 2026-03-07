@@ -1,3 +1,17 @@
+export const TaskStatus = {
+  Pending: 'pending',
+  InProgress: 'in_progress',
+  Done: 'done',
+} as const
+
+export type TaskStatusValue = (typeof TaskStatus)[keyof typeof TaskStatus]
+
+export const TASK_STATUS_LABELS: Record<TaskStatusValue, string> = {
+  pending: 'Pending',
+  in_progress: 'In Progress',
+  done: 'Done',
+}
+
 export type Task = {
   id: string
   title: string
@@ -9,11 +23,4 @@ export type Task = {
 export type CreateTaskBody = {
   title: string
   status?: string
-}
-
-export type Tenant = 'tenant_a' | 'tenant_b'
-
-export const TENANT_TOKENS: Record<Tenant, string> = {
-  tenant_a: 'token_tenant_a',
-  tenant_b: 'token_tenant_b',
 }
