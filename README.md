@@ -1,5 +1,7 @@
 # Multi-Tenant Task Manager
 
+This project is a Full-stack multi-tenant task management. Each tenant has isolated data at the database level. Create, list, and delete tasks. Switch between tenants to see the isolation in action. The API enforces tenant scoping at the query level. Built with Hono on Cloudflare Workers, React on Cloudflare Pages, and Neon Postgres.
+
 ## Badges
 
 [![API CI](https://github.com/Yero123/task-app/actions/workflows/api.yml/badge.svg)](https://github.com/Yero123/task-app/actions/workflows/api.yml)
@@ -12,7 +14,7 @@
 
 - **Frontend:** https://50561cf8.task-app-frontend.pages.dev/
 - **API:** https://task-app.task-app-challenge-yerodin.workers.dev/
-- **Swagger / OpenAPI docs:** https://task-app.task-app-challenge-yerodin.workers.dev/doc
+- **Swagger / OpenAPI docs:** https://task-app.task-app-challenge-yerodin.workers.dev/ui
 
 ---
 
@@ -72,8 +74,28 @@ Tests use a real Postgres instance. 16 tests cover auth, CRUD, and tenant isolat
 
 ---
 
+## Tech Stack
+
+- API: Hono, Cloudflare Workers, Drizzle ORM, Neon Postgres (HTTP driver), Zod, @hono/zod-openapi, Swagger UI
+- Frontend: React 19, Vite, TailwindCSS, shadcn/ui, TanStack Query, React Hook Form, @hookform/resolvers, Zod, Lucide React, Sonner
+- Testing: Vitest, postgres-js
+- CI/CD: GitHub Actions, Cloudflare Pages, Cloudflare Workers
+
+---
+
+## Decisions Made
+
+- Every repository method receives tenantId and adds it to the SQL WHERE clause. No app-layer filtering only.
+- Repository handles persistence data and service handles business logic
+- Integration tests run against real Postgres. Catches SQL bugs and missing tenant filters that mocks would miss.
+- workerd is not on linux/arm64, so Docker uses server.node.ts (Node) (this was to dockerized the app to be easy to run). index.ts deploys to Workers.
+- Zod for validation, types, and OpenAPI in one schema. Used on API and frontend.
+- React Hook Form with Zod resolvers. Uncontrolled refs, less re-renders, built-in error state.
+
+
 ## Areas to Improve
 
+- CI auto-deploy is missing. The API workflow runs type-check and tests only. Deploy to Cloudflare Workers is done manually (`cd api && npx wrangler secret put DATABASE_URL` then `npx wrangler deploy`).
 - Replace static tokens with JWT.
 - Use Cloudflare KV or Durable Objects for rate limiting instead of in-memory.
 - Add React tests (Vitest + React Testing Library).
@@ -81,7 +103,7 @@ Tests use a real Postgres instance. 16 tests cover auth, CRUD, and tenant isolat
 - Add Storybook to document components. For now components are simple with shadcn so not needed.
 - If adding more modules or use cases in the future, consider clean architecture. For this project MVC is fine.
 
-**Architecture decisions (why X over Y)**
+**Architecture decisions**
 
 - Deployed on Cloudflare because it works well with Hono and fits the edge/serverless model.
 - Did not use Next.js because this is a simple task app. No need for SSR or other Next optimizations.
@@ -91,40 +113,6 @@ Tests use a real Postgres instance. 16 tests cover auth, CRUD, and tenant isolat
 
 - In-memory rate limiting instead of KV (simpler, resets on deploy).
 - Static tokens instead of JWT (faster to build, not production-ready).
-- CORS allows all origins (convenient for dev, should restrict in production).
-
-**What's missing**
-
-- PATCH endpoint for updating tasks.
-- Pagination on GET /tasks.
-- Frontend tests.
-- Storybook for component docs.
-- Specific CORS allowlist.
-
----
-
-## Errors to Fix
-
-None currently. Open issues or known bugs can be listed here.
-
----
-
-## Tech Stack
-
-- API: Hono, Cloudflare Workers, Drizzle ORM, Neon Postgres (HTTP driver)
-- Frontend: React 19, Vite, TailwindCSS, shadcn/ui, TanStack Query
-- Testing: Vitest, postgres-js
-- CI/CD: GitHub Actions, Cloudflare Pages, Cloudflare Workers
-
----
-
-## Decisions Made
-
-- Neon HTTP driver for Workers compatibility (no TCP, stateless).
-- Tenant ID in every repository query. No app-layer filtering only.
-- Repository + Service pattern. SQL in repository, business logic in service.
-- Integration tests against real DB to catch SQL and tenant isolation bugs.
-- Docker uses Node.js (`server.node.ts`) because workerd is not available on linux/arm64.
 
 ---
 
@@ -142,16 +130,24 @@ None currently. Open issues or known bugs can be listed here.
 
 ## Written Responses
 
-### 1. DMARC and DKIM on Cloudflare
+### 1. How would you approach implementing DMARC and DKIM configuration for a platform hosted on Cloudflare? What is the purpose of each?
 
-DKIM adds a cryptographic signature to outgoing emails. Your provider gives you a public key to add as a TXT record in Cloudflare DNS. DMARC is a policy at `_dmarc.yourdomain.com` that tells receivers what to do when SPF or DKIM fail: none, quarantine, or reject. Start with `p=none` to collect reports, then tighten to `p=reject`.
+DKIM and DMARC are both about making sure your emails are trusted. DKIM proves the email actually came from your domain, DMARC defines what happens when it doesn't. For DMARC I'd add another TXT record and go straight to p=reject since we want emails that fail verification to be blocked completely.
 
-### 2. Debugging a Multi-Tenant Data Leak
+For implementation, I'd generate a DKIM key pair and add the public key as a TXT record in Cloudflare DNS, the private key goes into the email service like Resend or SendGrid
 
-Check auth middleware for correct tenantId extraction. Audit all repository queries for `WHERE tenant_id = $tenantId`. Look for admin or debug routes that skip tenant scoping. Add tracing to compare tenantId in queries with the token. Fix by enforcing isolation in SQL and adding regression tests for cross-tenant access.
+### 2. A user reports they can see tasks that don't belong to them. Walk us through how you would debug and fix this in a multi-tenant system.
 
-### 3. Automated Daily Backup for Neon Postgres
+First I'd open our observability tool like Sentry, Coralogix, or similar, and find the exact API call the user made. I'd check the request headers to confirm their tenant identity and see what filters were actually hitting the database.
 
-Use Neon PITR on the paid plan for continuous recovery. Add a cron job to run `pg_dump` and upload to R2 or S3 with GFS retention (7 daily, 4 weekly, 3 monthly). After each dump, restore to a temp branch and run a smoke query to verify. Alert if restore or query fails.
+Then I'd trace that endpoint in the repository. The most common cause I've seen is a missing tenantId filter in the query. Sometimes it's a join that loses tenant context halfway through, or middleware that isn't injecting the tenant correctly into the request.
+
+### 3. What would your automated daily database backup strategy look like for a Neon Postgres database? How would you verify it's working?
+
+Neon handles backups natively through point-in-time recovery, so I'd leverage that instead of building a custom solution. It keeps up to 7 days of history automatically and restoring to any moment is almost instant using Neon's branching feature.
+
+For verification, in a previous project we had a backup running every night but when we actually needed to restore it, the data was corrupted. Since then I always set up a periodic restore test into a separate branch just to confirm everything is actually recoverable, not just that the job ran successfully.
+
+I'd also add a simple Slack or email notification after each restore test with success/failure status and row count, so the team always has confidence the strategy is actually working.
 
 ---
