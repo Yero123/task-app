@@ -14,7 +14,13 @@ app.use(
 	}),
 );
 
-app.get('/', (c) => c.text('Hello Hono!'));
+app.get('/', (c) =>
+	c.json({
+		name: 'Task App API',
+		version: '1.0.0',
+		docs: '/ui',
+	}),
+);
 
 app.route('/tasks', tasks);
 
