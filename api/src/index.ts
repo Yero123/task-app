@@ -8,7 +8,7 @@ const app = new OpenAPIHono();
 app.use(
 	'*',
 	cors({
-		origin: 'http://localhost:5173',
+		origin: (origin) => origin ?? '*',
 		allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 		allowHeaders: ['Content-Type', 'Authorization'],
 	}),
