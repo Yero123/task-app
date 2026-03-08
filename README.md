@@ -34,7 +34,7 @@ This project is a Full-stack multi-tenant task management. Each tenant has isola
 
 - Node 22 (run `nvm use` at repo root)
 - Docker and Docker Compose
-- Neon Postgres database
+- Neon Postgres database (only for local dev without Docker or for Cloudflare Workers deploy)
 - Cloudflare account (for deployment)
 
 ---
@@ -44,10 +44,10 @@ This project is a Full-stack multi-tenant task management. Each tenant has isola
 **With Docker:**
 
 ```bash
-cp api/.env.example api/.env
-# Set DATABASE_URL in api/.env
 docker compose up --build
 ```
+
+Docker Compose includes PostgreSQL. The API connects to `postgresql://task:task@db:5432/task` automatically and runs migrations on startup.
 
 API at http://localhost:8787, frontend at http://localhost:5173.
 
@@ -120,7 +120,7 @@ Tests use a real Postgres instance. 16 tests cover auth, CRUD, and tenant isolat
 
 **API (`api/.env`):**
 
-- `DATABASE_URL` – Neon Postgres connection string (required)
+- `DATABASE_URL` – Postgres connection string. With Docker, not needed (Compose provides it). For local dev: Neon or `postgresql://task:task@localhost:5432/task` if running Postgres locally.
 
 **Frontend (`frontend/.env`):**
 

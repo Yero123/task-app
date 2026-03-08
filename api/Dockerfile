@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8787
 
-CMD ["npx", "tsx", "src/server.node.ts"]
+CMD ["npm", "run", "start:docker"]

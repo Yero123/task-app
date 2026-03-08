@@ -1,9 +1,12 @@
 import { eq, and } from 'drizzle-orm';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { tasks, type Task, type NewTask } from '../db/schema';
 
+type Database = NeonHttpDatabase<Record<string, never>> | PostgresJsDatabase<Record<string, never>>;
+
 export class TaskRepository {
-	constructor(private readonly db: NeonHttpDatabase) {}
+	constructor(private readonly db: Database) {}
 
 	async findAllByTenantId(tenantId: string): Promise<Task[]> {
 		return this.db.select().from(tasks).where(eq(tasks.tenantId, tenantId));
